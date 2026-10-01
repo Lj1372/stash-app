@@ -1,0 +1,31 @@
+name: deploy-site
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL of site tarball'
+        required: true
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch site and publish to gh-pages
+        env:
+          URL: ${{ inputs.url }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          curl -fsSL "$URL" -o site.tgz
+          mkdir site && tar xzf site.tgz -C site
+          cd site
+          touch .nojekyll
+          ls -la
+          git init -q -b gh-pages
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -qm "Deploy site $(date -u +%FT%TZ)"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${REPO}.git" gh-pages
